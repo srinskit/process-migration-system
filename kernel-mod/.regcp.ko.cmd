@@ -1,0 +1,1 @@
+cmd_/home/srinskit/Projects/process-migration/kernel-mod/regcp.ko := ld -r -m elf_x86_64  -z max-page-size=0x200000 --build-id  -T ./scripts/module-common.lds -o /home/srinskit/Projects/process-migration/kernel-mod/regcp.ko /home/srinskit/Projects/process-migration/kernel-mod/regcp.o /home/srinskit/Projects/process-migration/kernel-mod/regcp.mod.o;  true
