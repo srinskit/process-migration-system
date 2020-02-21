@@ -1,0 +1,10 @@
+.vscode
+**/pm-pro
+**/*.mod.c
+**/Module.symvers
+**/*.ko
+**/modules.order
+**/*.mod
+**/*.o
+**/*.txt
+
