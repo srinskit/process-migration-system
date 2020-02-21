@@ -1,1 +1,0 @@
-cmd_/home/srinskit/Projects/process-migration/kernel-mod/regcp.mod := { echo  /home/srinskit/Projects/process-migration/kernel-mod/regcp.o; echo; } > /home/srinskit/Projects/process-migration/kernel-mod/regcp.mod
