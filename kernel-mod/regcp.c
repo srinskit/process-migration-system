@@ -7,6 +7,7 @@
 #include <linux/module.h>
 #include <linux/pid.h>
 #include <linux/pid_namespace.h>
+#include <linux/sched/task_stack.h>
 #include <linux/uaccess.h>
 
 int init_module(void);
@@ -20,7 +21,8 @@ static ssize_t device_write(struct file *, const char *, size_t, loff_t *);
 #define DEVICE_NAME "regcp"
 #define BUFF_SIZE 80
 
-static int copy_task_struct(struct task_struct *src, struct task_struct *dst);
+static inline int m_copy_process(struct task_struct *src,
+                                 struct task_struct *dst);
 
 static int Major;           /* Major number assigned to our device driver */
 static int Device_Open = 0; /* Is device open?  Used to prevent multiple
@@ -39,7 +41,7 @@ int init_module(void) {
         return Major;
     }
     printk(KERN_INFO "regcp spawned. Major: %d", Major);
-    return 0;
+    return SUCCESS;
 }
 
 void cleanup_module(void) {
@@ -95,7 +97,7 @@ static ssize_t device_write(struct file *filp,
     rcu_read_lock();
     tsk1 = pid_task(find_pid_ns(pid1, &init_pid_ns), PIDTYPE_PID);
     tsk2 = pid_task(find_pid_ns(pid2, &init_pid_ns), PIDTYPE_PID);
-    if (!copy_task_struct(tsk1, tsk2)) {
+    if (!m_copy_process(tsk1, tsk2)) {
         printk(KERN_DEBUG "%s: KSTATE copied\n", DEVICE_NAME);
     } else {
         printk(KERN_DEBUG "%s: KSTATE copy failed\n", DEVICE_NAME);
@@ -104,8 +106,15 @@ static ssize_t device_write(struct file *filp,
     return length;
 }
 
-static int copy_task_struct(struct task_struct *src, struct task_struct *dst) {
+static inline int m_copy_regs(struct task_struct *src,
+                              struct task_struct *dst) {
+    memcpy(task_pt_regs(dst), task_pt_regs(src), sizeof(struct pt_regs));
+    return SUCCESS;
+}
 
+static inline int m_copy_process(struct task_struct *src,
+                                 struct task_struct *dst) {
+    m_copy_regs(src, dst);
     return SUCCESS;
 }
 
