@@ -2,7 +2,7 @@
 #include <unistd.h>
 
 int main() {
-    for (int i = 0; i < 10000; ++i) {
-        usleep(10000);
+    for (int i = 1; i <= 40; ++i) {
+        usleep(100000);
     }
 }

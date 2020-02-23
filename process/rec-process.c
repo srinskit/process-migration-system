@@ -4,7 +4,7 @@
 FILE *fp;
 
 void rec(int i) {
-    if (i < 100) {
+    if (i <= 40) {
         usleep(100000);
         fprintf(fp, "%d\n", i);
         fflush(fp);

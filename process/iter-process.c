@@ -5,7 +5,7 @@ int child(int arg) {
     char file_name[20];
     sprintf(file_name, "child-%d.txt", arg);
     FILE *fp = fopen(file_name, "w");
-    for (int i = 1; i <= 100; ++i) {
+    for (int i = 1; i <= 40; ++i) {
         usleep(100000);
         fprintf(fp, "%d\n", i);
         fflush(fp);
