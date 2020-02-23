@@ -17,11 +17,11 @@ sudo python ../vmem-copy/main.py $pid1 $pid2
 echo "VMEM copied"
 
 echo "KSTATE $pid1 >>> $pid2"
-echo "$pid1 $pid2" > /dev/regcp
+echo "$pid1 $pid2" >/dev/regcp
 echo "KSTATE copied"
 
 kill -CONT $pid1
 kill -CONT $pid2
-wait
 
+sleep 2
 diff child-*
