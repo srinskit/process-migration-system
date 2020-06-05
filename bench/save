@@ -1,0 +1,11 @@
+#!/bin/bash
+
+DIR="${BASH_SOURCE%/*}"
+if [[ ! -d "$DIR" ]]; then DIR="$PWD"; fi
+
+mkdir -p "$2"
+
+python3 "$DIR/../state-tools/vmem-save.py" $1 "$2/process"
+python3 "$DIR/../state-tools/kstate-save.py" $1 "$2/process"
+
+zip -r "$2" "$2"

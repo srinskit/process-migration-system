@@ -1,0 +1,9 @@
+#!/bin/bash
+
+DIR="${BASH_SOURCE%/*}"
+if [[ ! -d "$DIR" ]]; then DIR="$PWD"; fi
+
+unzip -o "$2.zip"
+
+python3 "$DIR/../state-tools/vmem-load.py" $1 "$2/process"
+python3 "$DIR/../state-tools/kstate-load.py" $1 "$2/process"
