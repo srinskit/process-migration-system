@@ -3,6 +3,10 @@ import sys
 import subprocess
 import threading
 import signal
+import tqdm
+import os
+from shutil import unpack_archive
+from state_tools import kstate_load, vmem_load
 
 
 CHUNK_SIZE = 2048
@@ -19,42 +23,44 @@ server_socket.listen(3)
 
 def on_new_client(client_socket, addr):
     flag = 1
-    received_message = client_socket.recv(CHUNK_SIZE)
+    dst_proc_name = "sample"
+    dst_zip_filesize = int(client_socket.recv(CHUNK_SIZE).decode())
+    dst_zip_file = f"{dst_proc_name}.zip"
 
     # p = subprocess.Popen([BASE_PATH + received_message.decode()])
     # p.send_signal(signal.SIGSTOP)
     # print("PID:", p.pid)
 
     dst_pid = sys.argv[1]
-    dst_maps_file = open("/proc/{}/maps".format(dst_pid), 'r')
-    dst_mem_file = open("/proc/{}/mem".format(dst_pid), 'wb')
-    print(dst_maps_file.read())
-    start = ""
-    chunk = ""
-    while True:
-        received_message = client_socket.recv(CHUNK_SIZE)
-        if received_message != b'done':
-            # print("Message received from client:")
-            if flag == 1:
-                # print("Start : " + received_message.decode())
-                try:
-                    start = int(received_message.decode())
-                    flag = 0
-                except:
-                    print("Except:", received_message)
-                    dst_mem_file.close()
-            else:
-                # print("Chunk : " + received_message.decode())
-                chunk = received_message
-                dst_mem_file.seek(start)
-                bytes_written = dst_mem_file.write(chunk)
-                print(hex(start), bytes_written)
-                flag = 1
-            client_socket.send("ack".encode())
-        else:
-            print("Done received")
-            client_socket.send("ack".encode())
-            dst_mem_file.close()
+
+    progress = tqdm.tqdm(range(dst_zip_filesize), f"Receiving the process state", unit="B", unit_scale=True, unit_divisor=1024)
+    with open(dst_zip_file, "wb") as f:
+        for _ in progress:
+            # read bytes from the socket (receive)
+            bytes_read = client_socket.recv(CHUNK_SIZE)
+            if not bytes_read:    
+                # nothing is received
+                # file transmitting is done
+                break
+            # write to the file the bytes we just received
+            f.write(bytes_read)
+            # update the progress bar
+            progress.update(len(bytes_read))
+    
+    client_socket.send("ack".encode())
+    client_socket.close()
+
+    dst_proc_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dst_proc")
+    if not os.path.exists(dst_proc_dir):
+        os.makedirs(dst_proc_dir)
+    
+    dst_dir = os.path.join(dst_proc_dir, dst_proc_name)
+    unpack_archive(dst_zip_file, dst_dir, "zip")
+
+    kstate_load(dst_pid, dst_dir)
+    vmem_load(dst_pid, dst_dir)
+
+    return
 
 
 while True:
@@ -62,4 +68,4 @@ while True:
     x = threading.Thread(target=on_new_client, args=(c, addr))
     x.start()
 
-s.close()
+server_socket.close()

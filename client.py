@@ -2,37 +2,53 @@ import socket
 import time
 import sys
 import re
+import tqdm
+import os
+from shutil import make_archive
+from state_tools import vmem_save, kstate_save
 
-CHUNK_SIZE = 2048
 
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect((sys.argv[3], 8220))
+def send_process_state(src_pid, dst_ip):
+    CHUNK_SIZE = 2048
 
-src_pid = sys.argv[1]
-src_maps_file = open("/proc/{}/maps".format(src_pid), 'r')
-src_mem_file = open("/proc/{}/mem".format(src_pid), 'rb')
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect((dst_ip, 8220))
 
-client_socket.send(sys.argv[2].encode())
+    vmem_save(src_pid, src_pid)
+    kstate_save(src_pid, src_pid)
 
-for line in src_maps_file.readlines():
-    m = re.match(r'([0-9A-Fa-f]+)-([0-9A-Fa-f]+) ([-r])', line)
-    # if line.find("vsyscall") != -1 or line.find("vdso") != -1 or line.find("vvar") != -1:
-    #     continue
-    if line.find("stack") == -1 and line.find("heap") == -1:
-        continue
-    if m.group(3) == 'r':
-        start = int(m.group(1), 16)
-        end = int(m.group(2), 16)
-        print(m.group(1), m.group(2))
-        for start_i in range(start, end, CHUNK_SIZE):
-            src_mem_file.seek(start_i)
-            chunk = src_mem_file.read(CHUNK_SIZE)
-            client_socket.send(str(start_i).encode())
-            client_socket.recv(2048)
-            client_socket.send(chunk)
-            client_socket.recv(2048)
-            print("Sent:", start_i, "->", len(chunk))
+    state_tools_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "state_tools")
+    make_archive(
+        os.path.join(state_tools_dir, "{}.zip".format(src_pid)), 
+        "zip", 
+        os.path.join(state_tools_dir, src_pid))
 
-client_socket.send("done".encode())
-client_socket.recv(2048)
-client_socket.close()
+    src_zip_file = os.path.join(state_tools_dir, "{}.zip".format(src_pid))
+    src_zip_filesize = os.path.getsize(src_zip_file)
+
+    client_socket.send(f"{src_zip_filesize}".encode())
+
+    progress = tqdm.tqdm(range(src_zip_filesize), f"Sending process state to the destination machine", unit="B", unit_scale=True, unit_divisor=1024)
+    with open(src_zip_file, "rb") as f:
+        for _ in progress:
+            # read the bytes from the file
+            bytes_read = f.read(CHUNK_SIZE)
+            if not bytes_read:
+                # file transmitting is done
+                break
+            # we use sendall to assure transimission in 
+            # busy networks
+            client_socket.sendall(bytes_read)
+            # update the progress bar
+            progress.update(len(bytes_read))
+
+    # client_socket.send("done".encode())
+    client_socket.recv(2048)
+    client_socket.close()
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        print("Syntax: {} src_pid dst_ip".format(sys.argv[0]))
+        exit(1)
+    send_process_state(sys.argv[1], sys.argv[2])

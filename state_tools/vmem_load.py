@@ -3,8 +3,8 @@ import sys
 
 
 def vmem_load(dst_pid, src_file):
-    src_maps_file = open("{}.maps".format(src_file), 'r')
-    src_mem_file = open("{}.cmem".format(src_file), 'rb')
+    src_maps_file = open("{}/proc.maps".format(src_file), 'r')
+    src_mem_file = open("{}/proc.cmem".format(src_file), 'rb')
 
     dst_maps_file = open("/proc/{}/maps".format(dst_pid), 'r')
     dst_mem_file = open("/proc/{}/mem".format(dst_pid), 'wb')
