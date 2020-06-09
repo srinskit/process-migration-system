@@ -1,10 +1,12 @@
 import re
 import sys
+import os
 
 
 def vmem_load(dst_pid, src_file):
-    src_maps_file = open("{}/proc.maps".format(src_file), 'r')
-    src_mem_file = open("{}/proc.cmem".format(src_file), 'rb')
+    src_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), src_file)
+    src_maps_file = open("{}/proc.maps".format(src_dir), 'r')
+    src_mem_file = open("{}/proc.cmem".format(src_dir), 'rb')
 
     dst_maps_file = open("/proc/{}/maps".format(dst_pid), 'r')
     dst_mem_file = open("/proc/{}/mem".format(dst_pid), 'wb')

@@ -8,11 +8,13 @@ def kstate_load(dst_pid, src_file):
     req = "PUT kstate {}".format(dst_pid).encode()
     os.write(fd, req)
 
-    src_kconf_file = open("{}/proc.kconf".format(src_file), 'r')
+    src_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), src_file)
+
+    src_kconf_file = open("{}/proc.kconf".format(src_dir), 'r')
     kstate_size = int(src_kconf_file.readline())
     src_kconf_file.close()
 
-    src_kstate_file = open("{}/proc.kstate".format(src_file), 'rb')
+    src_kstate_file = open("{}/proc.kstate".format(src_dir), 'rb')
     kstate = src_kstate_file.read(kstate_size)
     src_kstate_file.close()
 

@@ -11,15 +11,17 @@ def kstate_save(src_pid, dst_file):
     res = os.read(fd, 80)
     kstate_size = int(res.decode().rstrip('\x00'))
 
-    if not os.path.exists("{}/".format(dst_file)):
-        os.makedirs("{}".format(dst_file))
-    dst_kconf_file = open("{}/proc.kconf".format(dst_file), 'w')
+    dst_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), dst_file)
+
+    if not os.path.exists(dst_dir):
+        os.makedirs(dst_dir)
+    dst_kconf_file = open("{}/proc.kconf".format(dst_dir), 'w')
     dst_kconf_file.write("{}\n".format(kstate_size))
     dst_kconf_file.close()
 
     kstate = os.read(fd, kstate_size)
 
-    dst_kstate_file = open("{}/proc.kstate".format(dst_file), 'wb')
+    dst_kstate_file = open("{}/proc.kstate".format(dst_dir), 'wb')
     dst_kstate_file.write(kstate)
     dst_kstate_file.close()
 

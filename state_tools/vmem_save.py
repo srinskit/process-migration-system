@@ -7,10 +7,12 @@ def vmem_save(src_pid, dst_file):
     src_maps_file = open("/proc/{}/maps".format(src_pid), 'r')
     src_mem_file = open("/proc/{}/mem".format(src_pid), 'rb')
 
-    if not os.path.exists("{}/".format(dst_file)):
-        os.makedirs("{}".format(dst_file))
-    dst_maps_file = open("{}/proc.maps".format(dst_file), 'w')
-    dst_mem_file = open("{}/proc.cmem".format(dst_file), 'wb')
+    dst_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), dst_file)
+
+    if not os.path.exists(dst_dir):
+        os.makedirs(dst_dir)
+    dst_maps_file = open("{}/proc.maps".format(dst_dir), 'w')
+    dst_mem_file = open("{}/proc.cmem".format(dst_dir), 'wb')
 
     for line in src_maps_file.readlines():
         dst_maps_file.write(line)
