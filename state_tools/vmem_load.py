@@ -3,10 +3,9 @@ import sys
 import os
 
 
-def vmem_load(dst_pid, src_file):
-    src_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), src_file)
-    src_maps_file = open("{}/proc.maps".format(src_dir), 'r')
-    src_mem_file = open("{}/proc.cmem".format(src_dir), 'rb')
+def vmem_load(dst_pid, abs_src_dir):
+    src_maps_file = open("{}/proc.maps".format(abs_src_dir), 'r')
+    src_mem_file = open("{}/proc.cmem".format(abs_src_dir), 'rb')
 
     dst_maps_file = open("/proc/{}/maps".format(dst_pid), 'r')
     dst_mem_file = open("/proc/{}/mem".format(dst_pid), 'wb')
@@ -38,6 +37,11 @@ def vmem_load(dst_pid, src_file):
 if __name__ == "__main__":
     argv = sys.argv
     if len(argv) != 3:
-        print("dst_pid src_file")
+        print("dst_pid src_dir")
         exit(1)
-    vmem_load(argv[1], argv[2])
+
+    src_dir = argv[2]
+    if not os.path.isabs(src_dir):
+        src_dir = os.path.join(os.getcwd(), src_dir)
+
+    vmem_load(argv[1], src_dir)

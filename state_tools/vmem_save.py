@@ -3,16 +3,12 @@ import sys
 import os
 
 
-def vmem_save(src_pid, dst_file):
+def vmem_save(src_pid, abs_dst_dir):
     src_maps_file = open("/proc/{}/maps".format(src_pid), 'r')
     src_mem_file = open("/proc/{}/mem".format(src_pid), 'rb')
 
-    dst_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), dst_file)
-
-    if not os.path.exists(dst_dir):
-        os.makedirs(dst_dir)
-    dst_maps_file = open("{}/proc.maps".format(dst_dir), 'w')
-    dst_mem_file = open("{}/proc.cmem".format(dst_dir), 'wb')
+    dst_maps_file = open("{}/proc.maps".format(abs_dst_dir), 'w')
+    dst_mem_file = open("{}/proc.cmem".format(abs_dst_dir), 'wb')
 
     for line in src_maps_file.readlines():
         dst_maps_file.write(line)
@@ -36,6 +32,13 @@ def vmem_save(src_pid, dst_file):
 if __name__ == "__main__":
     argv = sys.argv
     if len(argv) != 3:
-        print("src_pid dst_file")
+        print("src_pid dst_dir")
         exit(1)
-    vmem_save(argv[1], argv[2])
+
+    dst_dir = argv[2]
+    if not os.path.isabs(dst_dir):
+        dst_dir = os.path.join(os.getcwd(), dst_dir)
+    if not os.path.exists(dst_dir):
+        os.makedirs(dst_dir)
+
+    vmem_save(argv[1], dst_dir)

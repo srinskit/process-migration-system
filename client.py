@@ -14,21 +14,21 @@ def send_process_state(src_pid, dst_ip):
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.connect((dst_ip, 8220))
 
-    vmem_save(src_pid, src_pid)
-    kstate_save(src_pid, src_pid)
+    abs_dst_dir = os.path.join(os.getcwd(), src_pid)
+    if not os.path.exists(abs_dst_dir):
+        os.makedirs(abs_dst_dir)
 
-    state_tools_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "state_tools")
-    make_archive(
-        os.path.join(state_tools_dir, "{}.zip".format(src_pid)), 
-        "zip", 
-        os.path.join(state_tools_dir, src_pid))
+    vmem_save(src_pid, abs_dst_dir)
+    kstate_save(src_pid, abs_dst_dir)
 
-    src_zip_file = os.path.join(state_tools_dir, "{}.zip".format(src_pid))
+    make_archive(abs_dst_dir, "zip", abs_dst_dir)
+
+    src_zip_file = "{}.zip".format(abs_dst_dir)
     src_zip_filesize = os.path.getsize(src_zip_file)
 
     client_socket.send(f"{src_zip_filesize}".encode())
-
-    progress = tqdm.tqdm(range(src_zip_filesize), f"Sending process state to the destination machine", unit="B", unit_scale=True, unit_divisor=1024)
+    progress = tqdm.tqdm(range(src_zip_filesize), f"Sending process state to the destination machine",
+                         unit="B", unit_scale=True, unit_divisor=1024)
     with open(src_zip_file, "rb") as f:
         for _ in progress:
             # read the bytes from the file

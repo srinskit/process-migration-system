@@ -25,7 +25,8 @@ def on_new_client(client_socket, addr):
     flag = 1
     dst_proc_name = "sample"
     dst_zip_filesize = int(client_socket.recv(CHUNK_SIZE).decode())
-    dst_zip_file = f"{dst_proc_name}.zip"
+    dst_zip_file = os.path.join(os.getcwd(), f"{dst_proc_name}.zip")
+    dst_dir = os.path.join(os.getcwd(), dst_proc_name)
 
     # p = subprocess.Popen([BASE_PATH + received_message.decode()])
     # p.send_signal(signal.SIGSTOP)
@@ -50,11 +51,6 @@ def on_new_client(client_socket, addr):
     client_socket.send("ack".encode())
     client_socket.close()
 
-    dst_proc_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dst_proc")
-    if not os.path.exists(dst_proc_dir):
-        os.makedirs(dst_proc_dir)
-    
-    dst_dir = os.path.join(dst_proc_dir, dst_proc_name)
     unpack_archive(dst_zip_file, dst_dir, "zip")
 
     kstate_load(dst_pid, dst_dir)
