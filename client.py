@@ -1,7 +1,5 @@
 import socket
-import time
 import sys
-import re
 import tqdm
 import os
 from shutil import make_archive
@@ -30,11 +28,12 @@ def send_process_state(src_pid, dst_ip):
     progress = tqdm.tqdm(range(src_zip_filesize), f"Sending process state to the destination machine",
                          unit="B", unit_scale=True, unit_divisor=1024)
     with open(src_zip_file, "rb") as f:
-        for _ in progress:
+        for _ in range(src_zip_filesize):
             # read the bytes from the file
             bytes_read = f.read(CHUNK_SIZE)
             if not bytes_read:
                 # file transmitting is done
+                client_socket.shutdown(socket.SHUT_WR)
                 break
             # we use sendall to assure transimission in 
             # busy networks
@@ -42,7 +41,6 @@ def send_process_state(src_pid, dst_ip):
             # update the progress bar
             progress.update(len(bytes_read))
 
-    # client_socket.send("done".encode())
     client_socket.recv(2048)
     client_socket.close()
 

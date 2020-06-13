@@ -22,9 +22,8 @@ server_socket.listen(3)
 
 
 def on_new_client(client_socket, addr):
-    flag = 1
     dst_proc_name = "sample"
-    dst_zip_filesize = int(client_socket.recv(CHUNK_SIZE).decode())
+    dst_zip_filesize = int(client_socket.recv(2048).decode())
     dst_zip_file = os.path.join(os.getcwd(), f"{dst_proc_name}.zip")
     dst_dir = os.path.join(os.getcwd(), dst_proc_name)
 
@@ -36,7 +35,7 @@ def on_new_client(client_socket, addr):
 
     progress = tqdm.tqdm(range(dst_zip_filesize), f"Receiving the process state", unit="B", unit_scale=True, unit_divisor=1024)
     with open(dst_zip_file, "wb") as f:
-        for _ in progress:
+        for _ in range(dst_zip_filesize):
             # read bytes from the socket (receive)
             bytes_read = client_socket.recv(CHUNK_SIZE)
             if not bytes_read:    
@@ -55,13 +54,14 @@ def on_new_client(client_socket, addr):
 
     kstate_load(dst_pid, dst_dir)
     vmem_load(dst_pid, dst_dir)
-
+    
     return
 
 
 while True:
     c, addr = server_socket.accept()
-    x = threading.Thread(target=on_new_client, args=(c, addr))
-    x.start()
+    # x = threading.Thread(target=on_new_client, args=(c, addr))
+    # x.start()
+    on_new_client(c, addr)
 
 server_socket.close()

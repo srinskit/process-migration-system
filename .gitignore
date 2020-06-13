@@ -8,3 +8,4 @@
 **/*.o
 **/*.txt
 **/.*.cmd
+state_tools/__pycache__/
