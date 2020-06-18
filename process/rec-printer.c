@@ -5,13 +5,13 @@ FILE *fp;
 
 void rec(int i)
 {
-	if (i > 40)
+	if (i > 10)
 	{
 		return;
 	}
+	sleep(1);
 	fprintf(fp, "%d\n", i);
 	fflush(fp);
-	usleep(100000);
 	rec(i + 1);
 }
 
