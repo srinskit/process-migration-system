@@ -5,9 +5,16 @@ import threading
 import signal
 import tqdm
 import os
-from shutil import unpack_archive
+from shutil import unpack_archive, rmtree
 from state_tools import kstate_load, vmem_load
+from loguru import logger
 
+logger.remove()
+logger.add(sys.stdout, colorize=True,
+           format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
+           "<cyan>{function: <16}</cyan> | "
+           "<level>{message}</level>"
+           )
 
 CHUNK_SIZE = 2048
 BASE_PATH = "/home/ubuntu/mp-executables/"
@@ -21,9 +28,19 @@ server_socket.bind(address)
 server_socket.listen(3)
 
 
-def on_new_client(client_socket, addr):
-    dst_proc_name = "sample"
+def handle_request(client_socket, addr):
+    print()
+    dst_pid = sys.argv[1]
+
+    logger.info(f"Recevied live-migration request from {addr[0]}")
+    logger.info(f"Target process {dst_pid}")
+
+    logger.info("Receiving data")
+    logger.info("Receiving metadata")
+    dst_proc_name = dst_pid
     dst_zip_filesize = int(client_socket.recv(2048).decode())
+    logger.debug(f"Size of state data: {dst_zip_filesize} bytes")
+
     dst_zip_file = os.path.join(os.getcwd(), f"{dst_proc_name}.zip")
     dst_dir = os.path.join(os.getcwd(), dst_proc_name)
 
@@ -31,14 +48,15 @@ def on_new_client(client_socket, addr):
     # p.send_signal(signal.SIGSTOP)
     # print("PID:", p.pid)
 
-    dst_pid = sys.argv[1]
-
-    progress = tqdm.tqdm(range(dst_zip_filesize), f"Receiving the process state", unit="B", unit_scale=True, unit_divisor=1024)
+    logger.info("Receiving state data")
+    print()
+    progress = tqdm.tqdm(range(dst_zip_filesize), unit="B",
+                         unit_scale=True, unit_divisor=1024)
     with open(dst_zip_file, "wb") as f:
         for _ in range(dst_zip_filesize):
             # read bytes from the socket (receive)
             bytes_read = client_socket.recv(CHUNK_SIZE)
-            if not bytes_read:    
+            if not bytes_read:
                 # nothing is received
                 # file transmitting is done
                 break
@@ -46,22 +64,32 @@ def on_new_client(client_socket, addr):
             f.write(bytes_read)
             # update the progress bar
             progress.update(len(bytes_read))
-    
-    client_socket.send("ack".encode())
-    client_socket.close()
 
+    progress.close()
+    print()
+
+    logger.info("Decompressing state data")
     unpack_archive(dst_zip_file, dst_dir, "zip")
 
-    kstate_load(dst_pid, dst_dir)
     vmem_load(dst_pid, dst_dir)
-    
-    return
+    kstate_load(dst_pid, dst_dir)
+
+    rmtree(dst_dir)
+    client_socket.send("ack".encode())
+    client_socket.close()
+    logger.info("Live-migration complete")
 
 
-while True:
-    c, addr = server_socket.accept()
-    # x = threading.Thread(target=on_new_client, args=(c, addr))
-    # x.start()
-    on_new_client(c, addr)
+logger.info(f"Server started")
+try:
+    while True:
+        c, addr = server_socket.accept()
+        # x = threading.Thread(target=handle_request, args=(c, addr))
+        # x.start()
+        handle_request(c, addr)
+except KeyboardInterrupt:
+    print()
+finally:
+    logger.info(f"Server stopped")
 
 server_socket.close()

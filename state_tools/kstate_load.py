@@ -1,23 +1,32 @@
 import sys
 import os
+from loguru import logger
 
 
 def kstate_load(dst_pid, abs_src_dir):
-    fd = os.open("/dev/kstate-api", os.O_RDWR)
+    logger.info(f"Restoring kernel state")
 
-    req = "PUT kstate {}".format(dst_pid).encode()
-    os.write(fd, req)
-
-    src_kconf_file = open("{}/proc.kconf".format(abs_src_dir), 'r')
+    logger.debug("Reading metadata from proc.kconf")
+    src_kconf_file = open(f"{abs_src_dir}/proc.kconf", 'r')
     kstate_size = int(src_kconf_file.readline())
     src_kconf_file.close()
 
-    src_kstate_file = open("{}/proc.kstate".format(abs_src_dir), 'rb')
+    logger.debug("Reading kernel state data from proc.kstate")
+    src_kstate_file = open(f"{abs_src_dir}/proc.kstate", 'rb')
     kstate = src_kstate_file.read(kstate_size)
     src_kstate_file.close()
 
+    fd = os.open("/dev/kstate-api", os.O_RDWR)
+
+    req = f"PUT kstate {dst_pid}"
+    logger.debug(f"Sending query '{req}' to /dev/kstate-api")
+    os.write(fd, req.encode())
+
+    logger.debug("Sending kernel state data to /dev/kstate-api")
     os.write(fd, kstate)
     os.close(fd)
+
+    logger.debug("Restored kernel state")
 
 
 if __name__ == "__main__":
